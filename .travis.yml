@@ -1,3 +1,5 @@
+dist: xenial
+language: minimal
 sudo: required
 
 services:
@@ -11,6 +13,7 @@ before_install:
   - sudo apt-get -y -o Dpkg::Options::="--force-confnew" install docker-ce
   # enable buildkit (only 18.09 or later)
   ## - export DOCKER_BUILDKIT=1
+  - sudo apt-get install qemu-user-static
 
 addons:
   apt:
@@ -18,9 +21,9 @@ addons:
       - docker-ce
 
 env:
-  - TARGET_DIST=ubuntu TARGET_VER=1804
+#  - TARGET_DIST=ubuntu TARGET_VER=1804
   - TARGET_DIST=ubuntu TARGET_VER=1604
-  - TARGET_DIST=debian TARGET_VER=8
+#  - TARGET_DIST=debian TARGET_VER=8
 
 #branches:
 #  only:
@@ -31,5 +34,16 @@ script:
   - cd ../workdir
   - mv ../OpenRTM-aist .
 
-  - export IMAGE_NAME=openrtm:${TARGET_DIST}-${TARGET_VER}
-  - docker build -f OpenRTM-aist/build/${TARGET_DIST}_${TARGET_VER}/Dockerfile . -t ${IMAGE_NAME}
+  - wget https://downloads.raspberrypi.org/raspbian_lite_latest
+  - unzip raspbian_lite_latest
+  - sudo losetup -frP *-raspbian-stretch-lite.img
+  - sudo mount -o ro /dev/loop0p2 /mnt
+  - sudo mkdir /raspbian
+  - sudo cp -r /mnt/* /raspbian
+  - sudo cp /usr/bin/qemu-arm-static /raspbian/usr/bin/
+  - sudo mount -t devtmpfs devfs /raspbian/dev
+  - sudo mount -t devpts devpts /raspbian/dev/pts
+  - sudo mount -t proc proc /raspbian/proc
+  - sudo mount -t sysfs sys /raspbian/sys
+  - sudo cp -r OpenRTM-aist /raspbian
+  - sudo chroot /raspbian OpenRTM-aist/build/raspbian/build.sh OpenRTM-aist
