@@ -114,7 +114,7 @@ namespace RTC
       = coil::flatten(availableProviderTypes);
     RTC_DEBUG(("sdo.service.provider.available_services: %s",
                tmp["sdo.service.provider.available_services"].c_str()));
-    m_rtobj.setProperties(std::move(tmp));
+    m_rtobj.setProperties(tmp);
 
     // If types include '[Aa][Ll][Ll]', all types enabled in this RTC
     coil::vstring activeProviderTypes;

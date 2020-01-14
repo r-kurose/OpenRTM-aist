@@ -1221,7 +1221,7 @@ std::vector<coil::Properties> Manager::getLoadableModules()
 
     for (auto const& itr : coil::split(m_config["manager.preload.modules"], ","))
       {
-        std::string mpm_{coil::eraseBothEndsBlank(std::move(itr))};
+        std::string mpm_{coil::eraseBothEndsBlank(itr)};
         if (mpm_.empty())
           {
               continue;
@@ -2686,8 +2686,8 @@ std::vector<coil::Properties> Manager::getLoadableModules()
             coil::Properties prop;
             for (auto const& config : configs)
               {
-                std::string key{coil::eraseBothEndsBlank(std::move(config.first))};
-                std::string value{coil::eraseBothEndsBlank(std::move(config.second))};
+                std::string key{coil::eraseBothEndsBlank(config.first)};
+                std::string value{coil::eraseBothEndsBlank(config.second)};
                 prop["dataport." + key] = std::move(value);
               }
 

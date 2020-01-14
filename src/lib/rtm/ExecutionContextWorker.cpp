@@ -378,7 +378,7 @@ namespace RTC_impl
       std::lock_guard<std::mutex> addedGuard(m_addedMutex);
       for (auto & m_addedComp : m_addedComps)
         {
-          m_comps.emplace_back(std::move(m_addedComp));
+          m_comps.emplace_back(m_addedComp);
           RTC_TRACE(("Component added."));
         }
       m_addedComps.clear();
