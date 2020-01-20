@@ -1,0 +1,70 @@
+trigger:
+- master
+
+strategy:
+  matrix:
+    vs2019:
+      imageVersion: 'windows-2019'
+      cmakeArgs: '-DSSL_ENABLE=ON'
+    vs2017:
+      imageVersion: 'vs2017-win2016'
+      cmakeArgs: '-DSSL_ENABLE=ON'
+
+pool:
+  vmImage: $(imageVersion)
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.7'
+    addToPath: true
+    architecture: 'x64'
+
+- task: Cache@2
+  displayName: Cache omniORB
+  inputs:
+    key: '$(Build.SourcesDirectory)\azure-pipelines.yml'
+    path: '$(Pipeline.Workspace)\omniORB-4.2.3-x64-vc140-py37'
+    cacheHitVar: OMNIORB_CACHE
+
+- task: Cache@2
+  displayName: Cache OpenSSL
+  inputs:
+    key: '$(Build.SourcesDirectory)\azure-pipelines.yml'
+    path: 'C:\Program Files\OpenSSL-Win64'
+    cacheHitVar: OPENSSL_CACHE
+
+- task: PowerShell@2
+  displayName: Prepare omniORB
+  condition: ne(variables.OMNIORB_CACHE, 'true')
+  inputs:
+    targetType: 'inline'
+    script: |
+      Invoke-WebRequest -Uri "https://tmp.openrtm.org/pub/omniORB/win32/omniORB-4.2.3/omniORB-4.2.3-x64-vc140-py37.zip" -OutFile "$(Pipeline.Workspace)\omniORB.zip"
+      Expand-Archive -Path "$(Pipeline.Workspace)\omniORB.zip" -DestinationPath "$(Pipeline.Workspace)"
+
+- script: choco install -y --no-progress openssl
+  displayName: Install OpenSSL
+  condition: and(ne(variables.OPENSSL_CACHE, 'true'), ne(variables['imageVersion'], 'vs2015-win2012r2'))
+
+- task: CMake@1
+  inputs:
+    workingDirectory: 'build'
+    cmakeArgs:
+      -A x64
+      -DOMNI_VERSION=42
+      -DOMNI_MINOR=3
+      -DOMNITHREAD_VERSION=41
+      -DCORBA=omniORB
+      -DORB_ROOT=$(Pipeline.Workspace)\omniORB-4.2.3-x64-vc140-py37
+      -DOBSERVER_ENABLE=ON
+      $(cmakeArgs)
+      $(Build.SourcesDirectory)
+
+- task: VSBuild@1
+  inputs:
+    solution: 'build/OpenRTM_aist.sln'
+    configuration: 'Release'
+    maximumCpuCount: true
+    createLogFile: true
+    logFileVerbosity: 'minimal'
